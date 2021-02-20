@@ -41,7 +41,6 @@ $('#addBtn').on('click', function () {
 $(document).on('click', '.BtnDestroy', function () {
     let data_name = $(this).attr('data-name');
     $(`#inp_${data_name}`).remove();
-    console.log(data_name);
 });
 
 
@@ -50,42 +49,43 @@ $(document).on('click', '.BtnAdd', function () {
     let addEvent = $('.FormColumn:last').clone();
 
     $('input', addEvent).val('');
-    $('select option',addEvent).removeAttr('selected');
+    $('select option', addEvent).removeAttr('selected');
     addEvent.find('.error').remove('label.error');
     addEvent.find('.error').removeClass('error');
-    addEvent.appendTo('#FormTable');
+    // addEvent.appendTo('#FormTable');
+    addEvent.insertAfter($(this).parents('.FormColumn'))
 
     $('td.SrNo').each(function (index, element) {
         $(element).text(index + 1);
     });
 
-    $('.product_id').each(function(index){
+    $('.product_id').each(function (index) {
         $(this).attr('name', `product_id[${index}]`);
     });
 
-    $('.form_name').each((function(index){
+    $('.form_name').each((function (index) {
         $(this).attr('name', `name[${index}]`);
         $(this).rules('remove', 'required');
-        $(this).rules('add', {required:true});
+        $(this).rules('add', { required: true });
         // $(this).removeClass('error');
     }))
 
 
-    $('.form_qty').each(function(index){
+    $('.form_qty').each(function (index) {
         $(this).attr('name', `qty[${index}]`);
         $(this).rules('remove', 'required');
-        $(this).rules('add', {required:true});
+        $(this).rules('add', { required: true });
         // $(this).siblings('.error').remove();
     })
 
-    
+
 });
 
 
 $(document).on('click', '.BtnSub', function () {
     if ($('#FormTable tr').length != 1) {
         let val = $(this).closest('.SrNo').text();
-        console.log(val);
+
         setTimeout(() => {
             $('td.SrNo').each(function (index, element) {
                 $(element).text(index + 1);
@@ -96,21 +96,6 @@ $(document).on('click', '.BtnSub', function () {
     }
 });
 
-$(document).on('change', '.FormColumn .form_name', function () {
-    let product_price = $(this).find(':selected').data('price');
-    let product_rate = $(this).closest('tr.FormColumn').find('.form_rate');
-    let product_total = $(this).closest('tr.FormColumn').find('.form_total');
-    let product_qty = $(this).closest('tr.FormColumn').find('.form_qty');
-    product_rate.val(parseFloat(product_price).toFixed(2));
-
-    console.log(product_price);
-    if (product_price != null) {
-        product_total.val((product_qty.val() * product_price).toFixed(2));
-    } else if (product_price == '') {
-        product_total.val('');
-        product_qty.val('');
-    }
-});
 
 $(document).on('input', '.FormColumn .form_qty', function () {
     let product_qty = $(this).val();
@@ -124,24 +109,44 @@ $(document).on('input', 'input', function () {
 });
 
 $(document).on('change', 'select', function () {
+    // Total();
+    let product_price = $(this).val();
+    let product_rate = $(this).closest('tr.FormColumn').find('.form_rate');
+    let product_total = $(this).closest('tr.FormColumn').find('.form_total');
+    let product_qty = $(this).closest('tr.FormColumn').find('.form_qty');
 
-    Total();
+    $.ajax({
+        type: "POST",
+        url: "../php/Product.php",
+        data: {
+            id: product_price
+        },
+        dataType: "JSON",
+        success: function (response) {
+            if (response) {
+                if (response.price != null) {
+                    product_rate.val(parseFloat(response.price).toFixed(2));
+                    product_total.val((product_qty.val() * response.price).toFixed(2));
+                } else if (!response.price) {
+                    product_total.val('');
+                    product_qty.val('');
+                }
+                
+            } else {
+                product_total.val('');
+                product_qty.val('');
+            }
+            Total();
+        },
+    });
+
+
 });
 
 Total();
 
 function Total() {
-    // $.ajax({
-    //     type: "GET",
-    //     url: "../php/Product.php",
-    //     data: "data",
-    //     dataType: "json",
-    //     success: function (response) {
-    //         // console.log(response);
-    //         let res = JSON.parse(response);
-    //         console.log(res);
-    //     }
-    // });
+
 
     let sub_total = 0;
     let discount = parseFloat($('#TotalForm [name=discount]').val());
@@ -166,7 +171,7 @@ function Total() {
         $('#GrandTotal').text(grand_total.toFixed(2));
         $('#vat_per').text(0);
     }
-    
+
 }
 
 
